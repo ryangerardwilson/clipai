@@ -134,7 +134,7 @@ else
   mv "$tmp_dir/${APP}" "$APP_DIR"
   rm -rf "$tmp_dir"
 
-  cat > "${INSTALL_DIR}/${APP}" <<EOF
+  cat > "${INSTALL_DIR}/${APP}" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 "${HOME}/.${APP}/app/${APP}/${APP}" "$@"
