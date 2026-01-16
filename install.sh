@@ -142,6 +142,11 @@ EOF
   chmod 755 "${INSTALL_DIR}/${APP}"
 fi
 
+# Ensure clipai is also available via ~/.local/bin
+mkdir -p "$HOME/.local/bin"
+ln -sf "${INSTALL_DIR}/${APP}" "$HOME/.local/bin/${APP}"
+chmod 755 "${INSTALL_DIR}/${APP}" || true
+
 add_to_path() {
   local config_file=$1
   local command=$2
@@ -162,7 +167,7 @@ add_to_path() {
 }
 
 if [[ "$no_modify_path" != "true" ]]; then
-  if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
+  if [[ ":$PATH:" != *":$INSTALL_DIR:"* && ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
     XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
     current_shell=$(basename "${SHELL:-bash}")
 

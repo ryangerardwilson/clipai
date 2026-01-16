@@ -7,23 +7,26 @@ Supports multiline content between the delimiters.
 from __future__ import annotations
 
 import re
-from typing import Optional
+from typing import Optional, Tuple
 
-TRIGGER_PREFIX = "ai{{"
-TRIGGER_SUFFIX = "}}"
-
-# Multiline, greedy until last }}
-TRIGGER_PATTERN = re.compile(r"^ai\{\{(.*)\}\}$", re.DOTALL)
+TRIGGER_PATTERN = re.compile(r"^(?P<indent>[ \t]*)ai\{\{(?P<prompt>.*)\}\}$", re.DOTALL)
 
 
-def extract_prompt(text: str) -> Optional[str]:
+def extract_prompt(text: str) -> Optional[Tuple[str, str]]:
     if not text:
         return None
-    match = TRIGGER_PATTERN.match(text.strip())
+
+    candidate = text.rstrip()
+    match = TRIGGER_PATTERN.match(candidate)
     if not match:
         return None
-    prompt = match.group(1).strip()
-    return prompt or None
+
+    prompt = match.group("prompt").strip()
+    if not prompt:
+        return None
+
+    indent = match.group("indent")
+    return indent, prompt
 
 
 __all__ = ["extract_prompt"]
