@@ -9,7 +9,10 @@ from __future__ import annotations
 import re
 from typing import Optional, Tuple
 
-TRIGGER_PATTERN = re.compile(r"^(?P<indent>[ \t]*)ai\{\{(?P<prompt>.*)\}\}$", re.DOTALL)
+TRIGGER_PATTERN = re.compile(
+    r"^(?P<indent>[ \t]*)ai\{\{(?P<prompt>.*)\}\}\s*$",
+    re.DOTALL,
+)
 
 
 def extract_prompt(text: str) -> Optional[Tuple[str, str]]:
@@ -25,7 +28,7 @@ def extract_prompt(text: str) -> Optional[Tuple[str, str]]:
     if not prompt:
         return None
 
-    indent = match.group("indent")
+    indent = match.group("indent") or ""
     return indent, prompt
 
 
