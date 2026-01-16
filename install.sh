@@ -142,11 +142,6 @@ EOF
   chmod 755 "${INSTALL_DIR}/${APP}"
 fi
 
-# Ensure clipai is also available via ~/.local/bin
-mkdir -p "$HOME/.local/bin"
-ln -sf "${INSTALL_DIR}/${APP}" "$HOME/.local/bin/${APP}"
-chmod 755 "${INSTALL_DIR}/${APP}" || true
-
 add_to_path() {
   local config_file=$1
   local command=$2
@@ -166,32 +161,35 @@ add_to_path() {
   fi
 }
 
+if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
+  export PATH="$INSTALL_DIR:$PATH"
+  print_message info "${MUTED}Temporarily added ${NC}$INSTALL_DIR${MUTED} to PATH for current shell.${NC}"
+fi
+
 if [[ "$no_modify_path" != "true" ]]; then
-  if [[ ":$PATH:" != *":$INSTALL_DIR:"* && ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
-    XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
-    current_shell=$(basename "${SHELL:-bash}")
+  XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
+  current_shell=$(basename "${SHELL:-bash}")
 
-    case "$current_shell" in
-      zsh)  config_candidates=("$HOME/.zshrc" "$HOME/.zshenv" "$XDG_CONFIG_HOME/zsh/.zshrc" "$XDG_CONFIG_HOME/zsh/.zshenv") ;;
-      bash) config_candidates=("$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.profile" "$XDG_CONFIG_HOME/bash/.bashrc" "$XDG_CONFIG_HOME/bash/.bash_profile") ;;
-      fish) config_candidates=("$HOME/.config/fish/config.fish") ;;
-      *)    config_candidates=("$HOME/.profile" "$HOME/.bashrc") ;;
-    esac
+  case "$current_shell" in
+    zsh)  config_candidates=("$HOME/.zshrc" "$HOME/.zshenv" "$XDG_CONFIG_HOME/zsh/.zshrc" "$XDG_CONFIG_HOME/zsh/.zshenv") ;;
+    bash) config_candidates=("$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.profile" "$XDG_CONFIG_HOME/bash/.bashrc" "$XDG_CONFIG_HOME/bash/.bash_profile") ;;
+    fish) config_candidates=("$HOME/.config/fish/config.fish") ;;
+    *)    config_candidates=("$HOME/.profile" "$HOME/.bashrc") ;;
+  esac
 
-    config_file=""
-    for f in "${config_candidates[@]}"; do
-      if [[ -f "$f" ]]; then config_file="$f"; break; fi
-    done
+  config_file=""
+  for f in "${config_candidates[@]}"; do
+    if [[ -f "$f" ]]; then config_file="$f"; break; fi
+  done
 
-    if [[ -z "$config_file" ]]; then
-      print_message info "${MUTED}No shell config file found. Manually add:${NC}"
-      print_message info "  export PATH=$INSTALL_DIR:\$PATH"
+  if [[ -z "$config_file" ]]; then
+    print_message info "${MUTED}No shell config file found. Manually add:${NC}"
+    print_message info "  export PATH=$INSTALL_DIR:\$PATH"
+  else
+    if [[ "$current_shell" == "fish" ]]; then
+      add_to_path "$config_file" "fish_add_path $INSTALL_DIR"
     else
-      if [[ "$current_shell" == "fish" ]]; then
-        add_to_path "$config_file" "fish_add_path $INSTALL_DIR"
-      else
-        add_to_path "$config_file" "export PATH=$INSTALL_DIR:\$PATH"
-      fi
+      add_to_path "$config_file" "export PATH=$INSTALL_DIR:\$PATH"
     fi
   fi
 fi
@@ -220,7 +218,7 @@ ensure_config "$CONFIG_PATH"
 
 # Optionally prompt for key if interactive and missing
 if [[ -t 0 ]]; then
-  current_key=$(python3 - <<'PY'
+  current_key=$(CONFIG_PATH="$CONFIG_PATH" python3 - <<'PY'
 import json, os
 cfg_path = os.environ.get('CONFIG_PATH')
 with open(cfg_path) as f:
@@ -231,8 +229,8 @@ PY
   if [[ -z "$current_key" ]]; then
     read -r -p "Enter OpenAI API key (leave blank to skip): " new_key
     if [[ -n "$new_key" ]]; then
-      python3 - <<'PY'
-import json, os, sys
+      CONFIG_PATH="$CONFIG_PATH" NEW_KEY="$new_key" python3 - <<'PY'
+import json, os
 cfg_path = os.environ['CONFIG_PATH']
 new_key = os.environ.get('NEW_KEY', '')
 with open(cfg_path) as f:
