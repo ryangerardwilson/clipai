@@ -19,7 +19,12 @@ def _apply_indent(text: str, indent: str) -> str:
     if not indent:
         return text
     lines = text.splitlines(True)  # Keep line endings
-    return "".join((indent + line) if line.endswith("\n") else (indent + line) for line in lines)
+    if not lines:
+        return text
+    first = lines[0]
+    rest = lines[1:]
+    rest_indented = [(indent + line) if line.endswith("\n") else (indent + line) for line in rest]
+    return first + "".join(rest_indented)
 
 
 def run() -> None:

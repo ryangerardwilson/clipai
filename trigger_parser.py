@@ -10,7 +10,7 @@ import re
 from typing import Optional, Tuple
 
 TRIGGER_PATTERN = re.compile(
-    r"^(?P<indent>[ \t]*)ai\{\{(?P<prompt>.*)\}\}\s*$",
+    r"^(?P<indent>[ \t]*)[^\n]*?ai\{\{(?P<prompt>.*)\}\}\s*$",
     re.DOTALL,
 )
 
