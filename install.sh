@@ -71,6 +71,11 @@ print_message() {
 
 mkdir -p "$INSTALL_DIR"
 
+installed_version=""
+if [[ -x "${INSTALL_DIR}/${APP}" ]]; then
+  installed_version=$("${INSTALL_DIR}/${APP}" --version 2>/dev/null || true)
+fi
+
 # Install from local binary
 if [[ -n "$binary_path" ]]; then
   [[ -f "$binary_path" ]] || { print_message error "Binary not found: $binary_path"; exit 1; }
@@ -113,6 +118,11 @@ else
       print_message info  "${MUTED}See available releases: ${NC}https://github.com/${REPO}/releases"
       exit 1
     fi
+  fi
+
+  if [[ -n "$installed_version" && "$installed_version" == "${specific_version}" ]]; then
+    print_message info "${MUTED}${APP} version ${NC}${specific_version}${MUTED} already installed.${NC}"
+    exit 0
   fi
 
   print_message info "\n${MUTED}Installing ${NC}${APP} ${MUTED}version: ${NC}${specific_version}"
