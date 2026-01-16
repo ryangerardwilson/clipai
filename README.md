@@ -37,7 +37,7 @@ It runs: `wl-paste --watch ~/.clipai/bin/clipai`
 ## Usage
 
 ### Clipboard trigger (Wayland)
-Copy `ai{{ your prompt }}` to the clipboard — the service sees it, sends it to OpenAI, and swaps the clipboard with the response.
+Copy `ai{{ your prompt }}` to the clipboard — the service sees it, sends it to OpenAI, and swaps the clipboard with the response. The first line of the reply is left unindented (even if you copied from a nested block), so you can hit `o` in Vim or paste anywhere without fighting indentation; subsequent lines mirror whatever indent was before `ai{{ ... }}`.
 
 ### Direct CLI mode
 Need the answer in code right now? Run:
