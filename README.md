@@ -1,6 +1,6 @@
 # clipai
 
-Clipboard-triggered OpenAI helper. Copy `ai{{ your prompt }}` and the watcher will replace your clipboard with the model response.
+Clipboard-triggered (and CLI-friendly) OpenAI helper. Copy `ai{{ your prompt }}` and the watcher will replace your clipboard with the model response — or just run `clipai "your prompt"` from any shell to get the answer straight into your clipboard.
 
 ## Install (one-liner)
 
@@ -34,11 +34,31 @@ Installer installs a user service:
 
 It runs: `wl-paste --watch ~/.clipai/bin/clipai`
 
+## Usage
+
+### Clipboard trigger (Wayland)
+Copy `ai{{ your prompt }}` to the clipboard — the service sees it, sends it to OpenAI, and swaps the clipboard with the response.
+
+### Direct CLI mode
+Need the answer in code right now? Run:
+
+```bash
+clipai "give me the command to search for lines of .py files in which the word 'orchestrator' appears"
+```
+
+…and your clipboard is immediately loaded with something like:
+
+```bash
+grep -RIn --include='*.py' 'orchestrator' .
+```
+
+Paste it wherever you want.
+
 ## Development
 
 - Entry: `python main.py` (reads stdin, emits to clipboard)
 - Requirements: `pip install -r requirements.txt`
-- Trigger parsing: `ai{{ ... }}` (multiline supported)
+- Trigger parsing: `ai{{ ... }}` (multiline supported, leading indent preserved)
 - OpenAI client strips code fences by default.
 
 ## Release
