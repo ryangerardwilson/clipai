@@ -25,42 +25,9 @@ The app reads `~/.config/clipai/config.json` (XDG). If missing, the installer cr
 
 Set your API key and `chmod 600 ~/.config/clipai/config.json`.
 
-### Optional notifications
-
-You can ask ClipAI to run your own commands when a response finishes:
-
-- `success_notification_command` runs after the clipboard is updated successfully
-- `failure_notification_command` runs if the OpenAI call fails, the clipboard write fails, or the model returns an empty string
-- `hide_notification_command` runs after `duration_in_seconds`
-
-Each command is configured as a JSON array of **strings**. Pass every argument as a string (e.g. `"6"`, not `6`). Commands run without a shell by default; if you need shell features, wrap them with `bash -lc` explicitly.
-
-Example using a generic notification script:
-
-```json
-{
-  "openai_api_key": "",
-  "model": "gpt-5.2",
-  "system_instruction": "Your role is to simply return a concise code snippet",
-  "strip_code_fences": true,
-  "notifications": {
-    "success_notification_command": ["notify.sh", "success"],
-    "failure_notification_command": ["notify.sh", "failure"],
-    "duration_in_seconds": 5,
-    "hide_notification_command": ["notify.sh", "hide"]
-  }
-}
-```
-
-Need shell tricks (like redirects or aliases)?
-
-```json
-"success_notification_command": ["bash", "-lc", "notify.sh success >> /tmp/clipai_notify.log 2>&1"]
-```
-
 ### CLI behaviour
 
-The CLI spawns a background worker for prompts by default so the command returns immediately. Use `--wait` if you want it to block until the response (handy for debugging).
+The CLI spawns a background worker for prompts by default so the command returns immediately. Use `--wait` if you want it to block until the response (handy for debugging). ClipAI does not emit completion notifications—if you want to know whether the response is ready, paste.
 
 ## Service
 

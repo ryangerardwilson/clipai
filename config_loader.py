@@ -17,7 +17,6 @@ DEFAULTS = {
     "model": "gpt-5.2",
     "system_instruction": "Your role is to simply return a concise code snippet",
     "strip_code_fences": True,
-    "notifications": {},
 }
 
 
