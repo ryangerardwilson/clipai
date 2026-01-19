@@ -1,3 +1,3 @@
-(Venv) [ryan@revelations clipai]$ systemctl --user show clipai-clipboard-watcher.service | grep Environment
-SetLoginEnvironment=no
-(Venv) [ryan@revelations clipai]$
+a = int(input("Enter first number: "))
+b = int(input("Enter second number: "))
+print("Sum:", a + b)
