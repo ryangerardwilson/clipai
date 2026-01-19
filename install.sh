@@ -259,12 +259,50 @@ fi
 install_unit() {
   local unit_dir="$HOME/.config/systemd/user"
   mkdir -p "$unit_dir"
-  cat > "$unit_dir/$UNIT_NAME" <<EOF
+
+  local service_path="${PATH:-/usr/local/bin:/usr/bin:/bin}"
+  # Ensure the PATH includes standard system locations even under systemd user units
+  if [[ ":$service_path:" != *":/usr/local/bin:"* ]]; then
+    service_path="/usr/local/bin:${service_path}"
+  fi
+  if [[ ":$service_path:" != *":/usr/bin:"* ]]; then
+    service_path="/usr/bin:${service_path}"
+  fi
+  if [[ ":$service_path:" != *":/bin:"* ]]; then
+    service_path="/bin:${service_path}"
+  fi
+  service_path=${service_path//%/%%}
+
+  local service_wayland="${WAYLAND_DISPLAY:-}"
+  service_wayland=${service_wayland//%/%%}
+  local service_display="${DISPLAY:-}"
+  service_display=${service_display//%/%%}
+  local service_runtime="${XDG_RUNTIME_DIR:-}"
+  service_runtime=${service_runtime//%/%%}
+
+  local unit_file="$unit_dir/$UNIT_NAME"
+  local env_lines=()
+  env_lines+=("Environment=\"PATH=${service_path}\"")
+  if [[ -n "$service_wayland" ]]; then
+    env_lines+=("Environment=\"WAYLAND_DISPLAY=${service_wayland}\"")
+  fi
+  if [[ -n "$service_display" ]]; then
+    env_lines+=("Environment=\"DISPLAY=${service_display}\"")
+  fi
+  if [[ -n "$service_runtime" ]]; then
+    env_lines+=("Environment=\"XDG_RUNTIME_DIR=${service_runtime}\"")
+  fi
+
+  {
+    cat <<EOF
 [Unit]
 Description=ClipAI clipboard watcher
 After=graphical-session.target
 
 [Service]
+EOF
+    printf '%s\n' "${env_lines[@]}"
+    cat <<EOF
 ExecStart=/usr/bin/wl-paste --watch %h/.${APP}/bin/${APP}
 Restart=always
 RestartSec=1
@@ -272,6 +310,7 @@ RestartSec=1
 [Install]
 WantedBy=graphical-session.target
 EOF
+  } > "$unit_file"
 }
 
 install_unit
