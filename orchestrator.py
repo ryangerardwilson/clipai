@@ -202,6 +202,38 @@ class Orchestrator:
     def _handle_execute(self, indent: str, command: str) -> int:
         # Execute using the user's shell semantics via bash -lc
         env = os.environ.copy()
+        # Optional inline CWD prefix:
+        # Syntax 1: leading line "cwd: /path" (removed before execution)
+        # Syntax 2: leading token "@/path" or "@~/path" before the command
+        cwd_override: str | None = None
+
+        stripped = command.lstrip()
+        # Syntax 1: first line "cwd: <path>"
+        first_newline = stripped.find("\n")
+        first_line = stripped if first_newline == -1 else stripped[:first_newline]
+        if first_line.lower().startswith("cwd:"):
+            cwd_override = first_line.split(":", 1)[1].strip()
+            command = stripped[len(first_line) :].lstrip("\n")
+        else:
+            # Syntax 2: leading "@<path>" token
+            if stripped.startswith("@"):
+                # consume until first whitespace
+                ws_idx = len(stripped)
+                for i, ch in enumerate(stripped):
+                    if i == 0:
+                        continue
+                    if ch.isspace():
+                        ws_idx = i
+                        break
+                cwd_token = stripped[1:ws_idx]
+                if cwd_token:
+                    cwd_override = cwd_token
+                    command = stripped[ws_idx:].lstrip()
+
+        if cwd_override:
+            # expand ~ and env vars
+            cwd_override = os.path.expandvars(os.path.expanduser(cwd_override))
+
         try:
             proc = subprocess.run(
                 ["bash", "-lc", command],
@@ -211,6 +243,7 @@ class Orchestrator:
                 timeout=5,
                 check=False,
                 env=env,
+                cwd=cwd_override or None,
             )
         except subprocess.TimeoutExpired:
             try:

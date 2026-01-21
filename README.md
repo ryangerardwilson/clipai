@@ -52,12 +52,18 @@ Rules:
 - Full shell semantics (pipes, redirects, subshells, expansions) are supported.
 - Hard timeout: 5 seconds. On timeout, the clipboard becomes `clipai: execute timeout (5s)`.
 - Stdout is copied to the clipboard. If there is stderr, it is appended under a `--- stderr ---` section. Non-zero exit codes append `exit N`.
-- Working directory is the current process working directory. In the systemd user service this is typically `$HOME` unless configured otherwise. Use `cd` inside the command if you need another path.
+ - Working directory is the current process working directory. In the systemd user service this is typically `$HOME` unless configured otherwise. Use `cd` inside the command if you need another path.
+ 
+ Optional CWD overrides:
+ - Prefix the body with a first line `cwd: /absolute/or/~/path` to run there.
+ - Or start the body with an inline token like `@/absolute/or/~/path` followed by a space, then the command.
 
 Examples:
 - `e{{ ls -la }}`
 - `e{{ git rev-parse --short HEAD }}`
 - `e{{ cd ~/project && rg -n "TODO" | head -50 }}`
+ - `e{{ cwd: ~/project\nls -la\n}}`
+ - `e{{ @~/project rg -n "TODO" | head -50 }}`
 
 ### Direct CLI mode
 Need the answer in code right now? Run:
