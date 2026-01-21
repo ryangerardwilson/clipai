@@ -52,7 +52,7 @@ Rules:
 - Full shell semantics (pipes, redirects, subshells, expansions) are supported.
 - Hard timeout: 5 seconds. On timeout, the clipboard becomes `clipai: execute timeout (5s)`.
 - Stdout is copied to the clipboard. If there is stderr, it is appended under a `--- stderr ---` section. Non-zero exit codes append `exit N`.
-- Default working directory is `$HOME`. Use `cd` inside the command if you need another path.
+- Working directory is the current process working directory. In the systemd user service this is typically `$HOME` unless configured otherwise. Use `cd` inside the command if you need another path.
 
 Examples:
 - `e{{ ls -la }}`

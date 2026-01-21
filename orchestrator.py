@@ -202,7 +202,6 @@ class Orchestrator:
     def _handle_execute(self, indent: str, command: str) -> int:
         # Execute using the user's shell semantics via bash -lc
         env = os.environ.copy()
-        cwd = os.path.expanduser(env.get("HOME", "~"))
         try:
             proc = subprocess.run(
                 ["bash", "-lc", command],
@@ -212,7 +211,6 @@ class Orchestrator:
                 timeout=5,
                 check=False,
                 env=env,
-                cwd=cwd,
             )
         except subprocess.TimeoutExpired:
             try:
