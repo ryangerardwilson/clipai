@@ -13,7 +13,7 @@ from clipboard_io import write_clipboard
 from config_loader import load_config
 from config_paths import get_config_path
 from openai_client import complete_prompt
-from trigger_parser import extract_trigger
+from trigger_parser import extract_prompt
 
 DEFAULT_INSTALL_CMD = "curl -fsSL https://raw.githubusercontent.com/ryangerardwilson/clipai/main/install.sh | bash"
 
@@ -100,35 +100,30 @@ class Orchestrator:
         text = stdin.read()
         if self._maybe_pretty_json(text):
             return 0
-        trig = extract_trigger(text)
-        if trig is None:
+        parsed = extract_prompt(text)
+        if parsed is None:
             return 0
 
-        indent, tag, body = trig
+        indent, prompt = parsed
 
-        if tag == "e":
-            return self._handle_execute(indent, body)
-        if tag == "ai":
-            cfg = load_config()
-            if not cfg.get("openai_api_key"):
-                return 0
-            try:
-                result = complete_prompt(body, cfg)
-            except Exception as exc:  # noqa: BLE001
-                sys.stderr.write(f"clipai: error calling OpenAI: {exc}\n")
-                sys.stderr.flush()
-                return 0
-            if not result:
-                return 0
-            result = self._apply_indent(result, indent)
-            try:
-                write_clipboard(result)
-            except Exception as exc:  # noqa: BLE001
-                sys.stderr.write(f"clipai: error writing clipboard: {exc}\n")
-                sys.stderr.flush()
+        cfg = load_config()
+        if not cfg.get("openai_api_key"):
             return 0
 
-        # Unknown tag: ignore
+        try:
+            result = complete_prompt(prompt, cfg)
+        except Exception as exc:  # noqa: BLE001
+            sys.stderr.write(f"clipai: error calling OpenAI: {exc}\n")
+            sys.stderr.flush()
+            return 0
+        if not result:
+            return 0
+        result = self._apply_indent(result, indent)
+        try:
+            write_clipboard(result)
+        except Exception as exc:  # noqa: BLE001
+            sys.stderr.write(f"clipai: error writing clipboard: {exc}\n")
+            sys.stderr.flush()
         return 0
 
     def _spawn_prompt_worker(self, prompt: str) -> None:
@@ -199,87 +194,6 @@ class Orchestrator:
 
         return True
 
-    def _handle_execute(self, indent: str, command: str) -> int:
-        # Execute using the user's shell semantics via bash -lc
-        env = os.environ.copy()
-        # Optional inline CWD prefix:
-        # Syntax 1: leading line "cwd: /path" (removed before execution)
-        # Syntax 2: leading token "@/path" or "@~/path" before the command
-        cwd_override: str | None = None
-
-        stripped = command.lstrip()
-        # Syntax 1: first line "cwd: <path>"
-        first_newline = stripped.find("\n")
-        first_line = stripped if first_newline == -1 else stripped[:first_newline]
-        if first_line.lower().startswith("cwd:"):
-            cwd_override = first_line.split(":", 1)[1].strip()
-            command = stripped[len(first_line) :].lstrip("\n")
-        else:
-            # Syntax 2: leading "@<path>" token
-            if stripped.startswith("@"):
-                # consume until first whitespace
-                ws_idx = len(stripped)
-                for i, ch in enumerate(stripped):
-                    if i == 0:
-                        continue
-                    if ch.isspace():
-                        ws_idx = i
-                        break
-                cwd_token = stripped[1:ws_idx]
-                if cwd_token:
-                    cwd_override = cwd_token
-                    command = stripped[ws_idx:].lstrip()
-
-        if cwd_override:
-            # expand ~ and env vars
-            cwd_override = os.path.expandvars(os.path.expanduser(cwd_override))
-
-        try:
-            proc = subprocess.run(
-                ["bash", "-lc", command],
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                timeout=5,
-                check=False,
-                env=env,
-                cwd=cwd_override or None,
-            )
-        except subprocess.TimeoutExpired:
-            try:
-                write_clipboard("clipai: execute timeout (5s)\n")
-            except Exception as exc:  # noqa: BLE001
-                sys.stderr.write(f"clipai: error writing clipboard: {exc}\n")
-                sys.stderr.flush()
-            return 0
-        except Exception as exc:  # noqa: BLE001
-            try:
-                write_clipboard(f"clipai: execute error: {exc}\n")
-            except Exception as exc2:  # noqa: BLE001
-                sys.stderr.write(f"clipai: error writing clipboard: {exc2}\n")
-                sys.stderr.flush()
-            return 0
-
-        out = (proc.stdout or b"").decode("utf-8", errors="replace")
-        err = (proc.stderr or b"").decode("utf-8", errors="replace")
-
-        result = out
-        if err:
-            if result and not result.endswith("\n"):
-                result += "\n"
-            result += "--- stderr ---\n" + err
-        if proc.returncode != 0:
-            if result and not result.endswith("\n"):
-                result += "\n"
-            result += f"exit {proc.returncode}\n"
-
-        result = self._apply_indent(result, indent)
-        try:
-            write_clipboard(result)
-        except Exception as exc:  # noqa: BLE001
-            sys.stderr.write(f"clipai: error writing clipboard: {exc}\n")
-            sys.stderr.flush()
-        return 0
 
     @staticmethod
     def _get_version() -> str:

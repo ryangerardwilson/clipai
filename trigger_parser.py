@@ -2,8 +2,9 @@
 """Parsing the trigger syntax from clipboard text.
 
 Default trigger: ai{{ <prompt> }}
-Also supports generic tags like e{{ <command> }}.
 Supports multiline content between the delimiters.
+Note: While a generic trigger parser exists internally, only `ai{{ ... }}` is
+handled by the application logic.
 """
 from __future__ import annotations
 
