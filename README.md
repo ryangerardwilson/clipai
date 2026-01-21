@@ -27,7 +27,7 @@ Set your API key and `chmod 600 ~/.config/clipai/config.json`.
 
 ### CLI behaviour
 
-The CLI spawns a background worker for prompts by default so the command returns immediately. Use `--wait` if you want it to block until the response (handy for debugging). ClipAI does not emit completion notifications—if you want to know whether the response is ready, paste.
+The CLI spawns a background worker for prompts by default so the command returns immediately. Use `-w` if you want it to block until the response (handy for debugging). ClipAI does not emit completion notifications—if you want to know whether the response is ready, paste.
 
 ## Service
 
@@ -42,6 +42,8 @@ It runs: `wl-paste --watch ~/.clipai/bin/clipai`
 
 ### Clipboard trigger (Wayland)
 Copy `ai{{ your prompt }}` to the clipboard — the service sees it, sends it to OpenAI, and swaps the clipboard with the response. The first line of the reply is left unindented (even if you copied from a nested block), so you can hit `o` in Vim or paste anywhere without fighting indentation; subsequent lines mirror whatever indent was before `ai{{ ... }}`.
+
+If you copy a JSON object (text that starts with `{` and ends with `}`), ClipAI will automatically replace the clipboard with a pretty-printed version using an indent of 4 spaces. This happens even without an API key or trigger syntax.
 
 ### Direct CLI mode
 Need the answer in code right now? Run:

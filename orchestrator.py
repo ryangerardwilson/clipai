@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -42,11 +43,11 @@ class Orchestrator:
     @staticmethod
     def _build_parser() -> argparse.ArgumentParser:
         parser = argparse.ArgumentParser(prog="clipai")
-        parser.add_argument("--version", action="store_true", help="Show version and exit")
-        parser.add_argument("--upgrade", action="store_true", help="Upgrade clipai via installer")
-        parser.add_argument("--wait", action="store_true", help="Run prompt synchronously")
+        parser.add_argument("-v", dest="version", action="store_true", help="Show version and exit")
+        parser.add_argument("-u", dest="upgrade", action="store_true", help="Upgrade clipai via installer")
+        parser.add_argument("-w", dest="wait", action="store_true", help="Run prompt synchronously")
         parser.add_argument(
-            "--_worker",
+            "-W",
             dest="worker",
             action="store_true",
             default=False,
@@ -97,6 +98,8 @@ class Orchestrator:
 
     def _handle_watcher(self, stdin: TextIO) -> int:
         text = stdin.read()
+        if self._maybe_pretty_json(text):
+            return 0
         parsed = extract_prompt(text)
         if parsed is None:
             return 0
@@ -127,7 +130,7 @@ class Orchestrator:
         return 0
 
     def _spawn_prompt_worker(self, prompt: str) -> None:
-        cmd = self._self_command(["--_worker", prompt])
+        cmd = self._self_command(["-W", prompt])
         try:
             subprocess.Popen(
                 cmd,
@@ -160,6 +163,39 @@ class Orchestrator:
         rest = lines[1:]
         rest_indented = [(indent + line) if line.endswith("\n") else (indent + line) for line in rest]
         return first + "".join(rest_indented)
+
+    def _maybe_pretty_json(self, text: str) -> bool:
+        if not text:
+            return False
+
+        stripped = text.strip()
+        if not stripped or not stripped.startswith("{") or not stripped.endswith("}"):
+            return False
+
+        try:
+            parsed = json.loads(stripped)
+        except json.JSONDecodeError:
+            return False
+
+        pretty = json.dumps(parsed, indent=4, ensure_ascii=False)
+        newline_suffix = ""
+        if text.endswith("\n"):
+            newline_count = len(text) - len(text.rstrip("\n"))
+            newline_suffix = "\n" * newline_count
+
+        final_text = pretty + newline_suffix
+
+        if final_text == text:
+            return False
+
+        try:
+            write_clipboard(final_text)
+        except Exception as exc:  # noqa: BLE001
+            sys.stderr.write(f"clipai: error writing clipboard: {exc}\n")
+            sys.stderr.flush()
+            return False
+
+        return True
 
     @staticmethod
     def _get_version() -> str:
